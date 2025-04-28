@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package robotShelfer;
+
+service RobotShelfer {
+    rpc RobotDriveToShelf (RobotDrive) returns (DriveResult);
+    rpc RobotTakeBox (RobotTake) returns (void);
+    rpc RobotLocation (void) returns (Location);
+}
+
+message void {
+
+}
+
+message RobotDrive {
+    double robotID = 1;
+    double productID = 2;
+}
+
+
+message DriveResult {
+    string result = 1;
+}
+
+message RobotTake {
+    string command = 1;
+}
+
+
+message Location {
+    string robotLocation = 1;
+}

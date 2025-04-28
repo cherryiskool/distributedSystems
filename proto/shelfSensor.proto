@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package shelfSensor;
+
+service ShelfSensor {
+	rpc ShelfSense (ShelfSensorRequest) returns (ShelfSensorResponse);
+}
+
+message ShelfSensorRequest {
+	double productID = 1;
+}
+
+message ShelfSensorResponse {
+	string shelfResult = 1;
+}

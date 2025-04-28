@@ -1,0 +1,31 @@
+[
+    {
+        "robotID": 1,
+        "location": 0,
+        "hasItem": false
+    },
+
+    {
+        "robotID": 2,
+        "location": 0,
+        "hasItem": false
+    },
+
+    {
+        "robotID": 3,
+        "location": 0,
+        "hasItem": false
+    },
+
+    {
+        "robotID": 4,
+        "location": 0,
+        "hasItem": false
+    },
+
+    {
+        "robotID": 5,
+        "location": 0,
+        "hasItem": false
+    }
+]

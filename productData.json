@@ -1,0 +1,52 @@
+[
+    {
+        "productID": 1,
+        "productLocation": 94,
+        "name": "Tissues"
+    },
+    {
+        "productID": 2,
+        "productLocation": 88,
+        "name": "Factorio"
+    },
+    {
+        "productID": 3,
+        "productLocation": 89,
+        "name": "Makeup"
+    },
+    {
+        "productID": 4,
+        "productLocation": 84,
+        "name": "Magazines"
+    },
+    {
+        "productID": 5,
+        "productLocation": 63,
+        "name": "Fanta"
+    },
+    {
+        "productID": 6,
+        "productLocation": 18,
+        "name": "GPUs"
+    },
+    {
+        "productID": 7,
+        "productLocation": 79,
+        "name": "MineCraft"
+    },
+    {
+        "productID": 8,
+        "productLocation": 35,
+        "name": "SKALD"
+    },
+    {
+        "productID": 9,
+        "productLocation": 13,
+        "name": "Books"
+    },
+    {
+        "productID": 10,
+        "productLocation": 32,
+        "name": "Vinyls"
+    }
+]

@@ -1,0 +1,45 @@
+<!DOCTYPE html> 
+
+<html> 
+
+<head> 
+
+  <title>Shelf Sensor Controls</title> 
+
+  <style> 
+
+    body { font-family: sans-serif; padding: 20px; background: #f8f8f8; } 
+
+    .calculator { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; } 
+
+    input, select, button { padding: 10px; margin: 5px 0; width: 100%; } 
+
+  </style> 
+
+</head> 
+
+<body> 
+
+  <div class="shelfControls"> 
+
+    <h2>gRPC Calculator</h2> 
+
+    <form action="/controlShelf" method="POST"> 
+
+      <input type="number" name="productID" step="any" required placeholder="Enter Product ID" /> 
+
+      <button type="submit">Find Product Location</button> 
+
+    </form> 
+
+    <% if (shelfResult !== null) { %> 
+
+      <h3>✅ Result: <%= shelfResult %></h3> 
+
+    <% } %> 
+
+  </div> 
+
+</body> 
+
+</html> 
