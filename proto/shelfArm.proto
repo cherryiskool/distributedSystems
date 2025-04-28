@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package shelfArm;
+
+service ShelfArm {
+    rpc TransferBox (transferRequest) returns (transferResult);
+}
+
+message transferRequest {
+    double robotID = 1;
+    double productID = 2;
+}
+
+message transferResult {
+    string result = 1;
+}

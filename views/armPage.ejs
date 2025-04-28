@@ -1,0 +1,47 @@
+<!DOCTYPE html> 
+
+<html> 
+
+<head> 
+
+  <title>Robot Controls</title> 
+
+  <style> 
+
+    body { font-family: sans-serif; padding: 20px; background: #f8f8f8; } 
+
+    .calculator { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 0 10px #ccc; } 
+
+    input, select, button { padding: 10px; margin: 5px 0; width: 100%; } 
+
+  </style> 
+
+</head> 
+
+<body> 
+
+  <div class="robotControls"> 
+
+    <h2>gRPC Calculator</h2> 
+
+    <form action="/controlArm" method="POST"> 
+
+      <input type="number" name="robotID" step="any" required placeholder="Enter Robot ID" /> 
+
+      <input type="number" name="productID" step="any" required placeholder="Enter Product ID" /> 
+
+      <button type="submit">Transfer Box</button> 
+
+    </form> 
+
+    <% if (result !== null) { %> 
+
+      <h3>✅ Result: <%= result %></h3> 
+
+    <% } %> 
+
+  </div> 
+
+</body> 
+
+</html> 

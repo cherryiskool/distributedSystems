@@ -4,11 +4,15 @@ const path = require('path');
 
 const ROBO_PATH = path.join(__dirname, 'proto', 'robotShelfer.proto'); 
 const SHELF_PATH = path.join(__dirname, 'proto', 'shelfSensor.proto'); 
+const ARM_PATH = path.join(__dirname, 'proto', 'shelfArm.proto');
 const packageRobo = protoLoader.loadSync(ROBO_PATH); 
 const packageShelf = protoLoader.loadSync(SHELF_PATH); 
+const packageArm = protoLoader.loadSync(ARM_PATH);
+
 
 const roboProto = grpc.loadPackageDefinition(packageRobo).robotShelfer;
 const shelfProto = grpc.loadPackageDefinition(packageShelf).shelfSensor;
+const armProto = grpc.loadPackageDefinition(packageArm).shelfArm;
 const roboData = require('./roboData.json');
 const productData = require('./productData.json');
 const { response } = require('express');
@@ -22,10 +26,11 @@ roboServer.bindAsync("0.0.0.0:50051", grpc.ServerCredentials.createInsecure(), (
 
 roboServer.addService(roboProto.RobotShelfer.service, {
     "RobotDriveToShelf": RobotDriveToShelf,
-    "RobotTakeBox" : RobotTakeBox
+    "RobotTakeBox" : RobotTakeBox,
+    "RobotLocation": RobotLocation
 });
 
-// server for shelf robot
+// server for shelf sensor robot
 const shelfServer = new grpc.Server();
 shelfServer.bindAsync("0.0.0.0:50052", grpc.ServerCredentials.createInsecure(), () => { 
     console.log("✅ gRPC Server running on port 50052"); 
@@ -41,6 +46,29 @@ const shelfClient = new shelfProto.ShelfSensor (
     'localhost:50052', 
     grpc.credentials.createInsecure() 
 );
+
+
+
+
+// necessary for shelf arm to call robot 
+const armClient = new roboProto.RobotShelfer (
+    'localhost:50053', 
+    grpc.credentials.createInsecure() 
+);
+
+
+
+// server for arm
+const armServer = new grpc.Server();
+armServer.bindAsync("0.0.0.0:50053", grpc.ServerCredentials.createInsecure(), () => { 
+    console.log("✅ gRPC Server running on port 50053"); 
+
+}); 
+
+armServer.addService(armProto.ShelfArm.service, {
+    "TransferBox": TransferBox
+});
+
 
 // functions for protos
 
@@ -82,7 +110,15 @@ function RobotDriveToShelf (call, callback) {
 }
 
 function RobotTakeBox (call, callback) {
-    console.log(call)
+    
+}
+
+function RobotLocation (call, callback) {
+    const{robotID} = call.request;
+
+    locationResult = (roboData.find(robot => robot.robotID == robotID)).location;
+
+    callback(null, {robotLocation: locationResult})
 }
 
 function ShelfSense (call, callback) {
@@ -101,4 +137,8 @@ function ShelfSense (call, callback) {
     }
     console.log("0",shelfResult)
     callback(null, { shelfResult: shelfResult.toString()})
+}
+
+function TransferBox (call, callback) {
+    const{robotID, productID} = call.request;
 }

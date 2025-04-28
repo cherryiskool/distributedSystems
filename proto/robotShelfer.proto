@@ -4,8 +4,8 @@ package robotShelfer;
 
 service RobotShelfer {
     rpc RobotDriveToShelf (RobotDrive) returns (DriveResult);
-    rpc RobotTakeBox (RobotTake) returns (void);
-    rpc RobotLocation (void) returns (Location);
+    rpc RobotTakeBox (Robot) returns (RobotTake);
+    rpc RobotLocation (Robot) returns (Location);
 }
 
 message void {
@@ -26,6 +26,10 @@ message RobotTake {
     string command = 1;
 }
 
+
+message Robot {
+    double robotID = 1;
+}
 
 message Location {
     string robotLocation = 1;
