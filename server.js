@@ -51,11 +51,10 @@ const shelfClient = new shelfProto.ShelfSensor (
 
 
 // necessary for shelf arm to call robot 
-const armClient = new roboProto.RobotShelfer (
-    'localhost:50053', 
+const roboClient = new roboProto.RobotShelfer (
+    'localhost:50051', 
     grpc.credentials.createInsecure() 
 );
-
 
 
 // server for arm
@@ -76,14 +75,14 @@ function RobotDriveToShelf (call, callback) {
     const {robotID, productID} = call.request;
     // productIDs = productData.map(product => product.productID);
     let result;
-    let shelfResult;
-    let productLocation;
+    // let shelfResult;
+    // let productLocation;
     shelfClient.ShelfSense({productID: productID}, (err, response) => {
         console.log("1",response.shelfResult)
         // productLocation = response.shelfResult;
         console.log("qqq",response.shelfResult);
         console.log("id", robotID)
-        if (robotID > roboData.length) {
+        if (robotID > roboData.length || robotID < 1) {
             result = "Invalid Robot Choice";
         } else if (response.shelfResult == "Invalid Product ID") {
             console.log("entered")
@@ -97,11 +96,7 @@ function RobotDriveToShelf (call, callback) {
             movedRobot.location = parseInt(response.shelfResult);
             result = "Robot Moved Successfully";
             console.log(roboData);
-        }
-    
-    
-    
-    
+        }    
         console.log("2",result);
         console.log("3",response.shelfResult);
         callback(null, { result: result})
@@ -110,17 +105,33 @@ function RobotDriveToShelf (call, callback) {
 }
 
 function RobotTakeBox (call, callback) {
+    const{robotID} = call.request;
+    let result;
+    if (robotID in roboData.map(robot => robot.robotID) == true) {
+        (roboData.find(robot => robot.robotID)).hasItem = true;
+        result = "Product Transferred Successfully";
+    }   else {
+        result = "Invalid Robot Choice";
+    }
+    callback(null, {result: result})
     
 }
 
+// function that returns the location of a robot - will be by the arm to know if the robot is in place
 function RobotLocation (call, callback) {
     const{robotID} = call.request;
+    let locationResult;
+    if (robotID > roboData.length || robotID < 1) {
+        locationResult = "Invalid Robot Choice";
+    } else {
+        locationResult = (roboData.find(robot => robot.robotID == robotID)).location;
 
-    locationResult = (roboData.find(robot => robot.robotID == robotID)).location;
-
+    }
+    
     callback(null, {robotLocation: locationResult})
 }
 
+// finds the location of the product given its id
 function ShelfSense (call, callback) {
     const{productID} = call.request;
     productIDs = productData.map(product => product.productID);
@@ -139,6 +150,47 @@ function ShelfSense (call, callback) {
     callback(null, { shelfResult: shelfResult.toString()})
 }
 
+// this function will transfer a product to a robot (not actually since this is all theoretical)
 function TransferBox (call, callback) {
     const{robotID, productID} = call.request;
+    let robotLocation;
+    let result;
+    let result1;
+    let result2;
+
+    // arm asks robot where it is at the moment
+    roboClient.RobotLocation({robotID: robotID}, (err, response) => {
+        result1 = response.robotLocation;
+        // console.log("1111111",result1);
+
+        // arm asks shelf sensors where the product is
+        shelfClient.ShelfSense({productID: productID}, (err, response) => {
+            result2 = response.shelfResult;
+            console.log(result2)
+
+            // 1 + 2 if the other services are returning errors then arm returns error
+            // 3 if no errors but the locations do not match up then product may not be transferred
+            // 4 otherwise transfer box to robot (robot take box refers to handles on the robot to grasp box on top of it - not an actual arm)
+            if (result1 == "Invalid Robot Choice") {
+                result = result1;
+                callback(null,{result: result})
+            } else if (result2 == "Invalid Product ID") {
+                result = result2;
+                callback(null,{result: result})
+            } else if (result1 != result2) {
+                result = "Robot not at Product Location";
+                callback(null,{result: result})
+            } else {
+                // result = "Product Transfered Successfully";
+                // grasp item and update data to show that the robot has an item
+                roboClient.RobotTakeBox({robotID: robotID}, (err, response) => {
+                    result = response.result;
+                    console.log("Skyrim", result);
+                    callback(null, {result: "Product Transferred Succesfully"});
+                })
+            }
+            console.log("Current Robot Data: ",roboData);
+
+        })
+    })
 }

@@ -24,12 +24,12 @@ app.get('/', (req, res) => {
 
 app.post('/controlArm', (req, res) => {
     const {robotID, productID} = req.body;
-    armClient.ShelfArm({robotID: robotID, productID: productID},(err, response) => { 
+    armClient.TransferBox({robotID: robotID, productID: productID},(err, response) => { 
             console.log(response);
             if (err) return res.send("gRPC Error: " + err.message); 
   
             res.render('armPage', { result: response.result }); 
-            console.log(result);
+            console.log(response);
         } 
     )
 });
