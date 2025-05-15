@@ -6,11 +6,11 @@ service RobotShelfer {
     rpc RobotDriveToShelf (RobotDrive) returns (DriveResult);
     rpc RobotTakeBox (Robot) returns (RobotTake);
     rpc RobotLocation (Robot) returns (Location);
+    rpc FreeRobot (Empty) returns (FreeResult);
+    rpc FirstFreeRobot (Robot) returns (OneFree);
 }
 
-message void {
-
-}
+message Empty {}
 
 message RobotDrive {
     double robotID = 1;
@@ -33,4 +33,12 @@ message Robot {
 
 message Location {
     string robotLocation = 1;
+}
+
+message FreeResult {
+    string FreeResult = 1;
+}
+
+message OneFree {
+    string result = 1;
 }

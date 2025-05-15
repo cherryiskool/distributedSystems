@@ -5,29 +5,36 @@ const path = require('path');
 const ROBO_PATH = path.join(__dirname, 'proto', 'robotShelfer.proto'); 
 const SHELF_PATH = path.join(__dirname, 'proto', 'shelfSensor.proto'); 
 const ARM_PATH = path.join(__dirname, 'proto', 'shelfArm.proto');
+const ADMIN_PATH =  path.join(__dirname, 'proto', 'admin.proto');
 const packageRobo = protoLoader.loadSync(ROBO_PATH); 
 const packageShelf = protoLoader.loadSync(SHELF_PATH); 
 const packageArm = protoLoader.loadSync(ARM_PATH);
+const packageAdmin = protoLoader.loadSync(ADMIN_PATH);
 
-
+// this loads all of the proto files
 const roboProto = grpc.loadPackageDefinition(packageRobo).robotShelfer;
 const shelfProto = grpc.loadPackageDefinition(packageShelf).shelfSensor;
 const armProto = grpc.loadPackageDefinition(packageArm).shelfArm;
+const adminProto = grpc.loadPackageDefinition(packageAdmin).admin;
+
+// this loads the data required (the robots and their position for example)
 const roboData = require('./roboData.json');
 const productData = require('./productData.json');
 const { response } = require('express');
 
-// server for robot
+// server for robot, this is required so that other services can call this one
 const roboServer = new grpc.Server();
 roboServer.bindAsync("0.0.0.0:50051", grpc.ServerCredentials.createInsecure(), () => { 
     console.log("✅ gRPC Server running on port 50051"); 
     // roboServer.start(); 
 }); 
 
+// this adds the services to the server so it can recognise them
 roboServer.addService(roboProto.RobotShelfer.service, {
     "RobotDriveToShelf": RobotDriveToShelf,
     "RobotTakeBox" : RobotTakeBox,
-    "RobotLocation": RobotLocation
+    "RobotLocation": RobotLocation,
+    "FreeRobot": FreeRobot,
 });
 
 // server for shelf sensor robot
@@ -68,9 +75,26 @@ armServer.addService(armProto.ShelfArm.service, {
     "TransferBox": TransferBox
 });
 
+// server for admin
+const adminServer = new grpc.Server();
+adminServer.bindAsync("0.0.0.0:50054", grpc.ServerCredentials.createInsecure(), () => {
+    console.log("✅ gRPC Server running on port 50054");
+})
+
+adminServer.addService(adminProto.Admin.service, {
+    "RequestPackage": RequestPackage
+})
+
+// necessary for admin to call arm
+const armClient = new armProto.ShelfArm (
+    'localhost:50053', 
+    grpc.credentials.createInsecure() 
+);
 
 // functions for protos
 
+
+// this controls the robot to drive to the product location
 function RobotDriveToShelf (call, callback) {
     const {robotID, productID} = call.request;
     // productIDs = productData.map(product => product.productID);
@@ -104,15 +128,26 @@ function RobotDriveToShelf (call, callback) {
 
 }
 
+// this function would relate to some sort of clasp on the robot that secures the boxes placed on it
 function RobotTakeBox (call, callback) {
     const{robotID} = call.request;
     let result;
+    console.log("RobotTakeBox RobotID", robotID);
+    console.log(roboData.map(robot => robot.robotID));
+    console.log(robotID == 5);
+    console.log(5 in roboData.map(robot => robot.robotID));
     if (robotID in roboData.map(robot => robot.robotID) == true) {
-        (roboData.find(robot => robot.robotID)).hasItem = true;
+        (roboData.find(robot => robot.robotID == robotID)).hasItem = true;
+        console.log("RobotID is correct for RobotTakeBox")
         result = "Product Transferred Successfully";
-    }   else {
+    } else if (robotID == 5) {
+        (roboData.find(robot => robot.robotID == 5)).hasItem = true;
+        console.log("RobotID is correct for RobotTakeBox")
+        result = "Product Transferred Successfully";
+    } else {
         result = "Invalid Robot Choice";
     }
+    console.log(roboData);
     callback(null, {result: result})
     
 }
@@ -129,6 +164,23 @@ function RobotLocation (call, callback) {
     }
     
     callback(null, {robotLocation: locationResult})
+}
+
+// this function returns all of the robots that are currently able to pick up boxes
+function FreeRobot (call,callback) {
+    robotIDs = roboData.map(robot => robot.robotID)
+    let availableBot;
+    for (i= 0; i < robotIDs.length; i++) {
+        if (roboData[i].hasItem == false) {
+            availableBot = i + 1;
+            console.log(availableBot);
+            console.log("numba",i);
+            break
+        } else if (i + 1 == robotIDs.length) {
+            availableBot = "No Robots are Free";
+        }
+    }
+    callback(null, {FreeResult: availableBot});
 }
 
 // finds the location of the product given its id
@@ -193,4 +245,38 @@ function TransferBox (call, callback) {
 
         })
     })
+}
+
+function RequestPackage (call, callback) {
+    const{productID} = call.request;
+    console.log("product", productID)
+    let robotID;
+    roboClient.FreeRobot({}, (err, response) => {
+        console.log(response.FreeResult);
+        robotID = response.FreeResult;
+        if (response.FreeResult == "No Robots are Free") {
+            console.log("RequestPackage NoRobotsError");
+            callback(null, {result: response.FreeResult});
+        } else {
+            roboClient.RobotDriveToShelf({robotID: robotID, productID: productID}, (err, response) => {
+                if (response.result == 'Invalid Product ID') {
+                    callback(null, {result: response.result});
+                } else {
+                    armClient.TransferBox({robotID: robotID, productID: productID}, (err, response) => {
+                        console.log("TransferBox Response", response);
+                        roboClient.RobotTakeBox({robotID: robotID}, (err, response) => {
+                            console.log("RobotTakeBox Response", response);
+                            callback(null, {result: response.result})
+                })
+            })
+            }
+
+        })
+        }
+
+    });
+
+
+
+
 }

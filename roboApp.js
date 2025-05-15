@@ -20,8 +20,16 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/', (req, res) => { 
-  res.render('roboPage', { result: null }); 
+console.log("first app.get called");
+
+  res.render('roboPage', {result:null});
+ 
 }); 
+
+app.get('/', (req, res) => {
+  console.log("2222222");
+
+})
 
 app.post('/controlRobot', (req, res) => {const {robotID, productID} = req.body;
 client.RobotDriveToShelf({robotID: robotID, productID: productID},(err, response) => { 
@@ -32,7 +40,11 @@ client.RobotDriveToShelf({robotID: robotID, productID: productID},(err, response
 
     } 
   )
+
 });
+
+
+
 
 app.listen(3000, () => { 
     console.log("🌐 GUI running at http://localhost:3000"); 

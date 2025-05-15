@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package admin;
+
+service Admin {
+    rpc RequestPackage (Request) returns (Result);
+}
+
+message Request {
+    double productID = 1;
+}
+
+message Result {
+    string result = 1;
+}
