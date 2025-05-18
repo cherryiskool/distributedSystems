@@ -2,6 +2,7 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader'); 
 const path = require('path');
 
+// creates 
 const ROBO_PATH = path.join(__dirname, 'proto', 'robotShelfer.proto'); 
 const SHELF_PATH = path.join(__dirname, 'proto', 'shelfSensor.proto'); 
 const ARM_PATH = path.join(__dirname, 'proto', 'shelfArm.proto');
@@ -35,6 +36,7 @@ roboServer.addService(roboProto.RobotShelfer.service, {
     "RobotTakeBox" : RobotTakeBox,
     "RobotLocation": RobotLocation,
     "FreeRobot": FreeRobot,
+    "DepositBox": DepositBox
 });
 
 // server for shelf sensor robot
@@ -82,7 +84,8 @@ adminServer.bindAsync("0.0.0.0:50054", grpc.ServerCredentials.createInsecure(), 
 })
 
 adminServer.addService(adminProto.Admin.service, {
-    "RequestPackage": RequestPackage
+    "RequestPackage": RequestPackage,
+    "RequestBoxDeposit" : RequestBoxDeposit
 })
 
 // necessary for admin to call arm
@@ -97,32 +100,35 @@ const armClient = new armProto.ShelfArm (
 // this controls the robot to drive to the product location
 function RobotDriveToShelf (call, callback) {
     const {robotID, productID} = call.request;
-    // productIDs = productData.map(product => product.productID);
     let result;
-    // let shelfResult;
-    // let productLocation;
+
+
+    //this calls the shelf client to call the ShelfSense function
     shelfClient.ShelfSense({productID: productID}, (err, response) => {
-        console.log("1",response.shelfResult)
-        // productLocation = response.shelfResult;
-        console.log("qqq",response.shelfResult);
-        console.log("id", robotID)
+
+        // these checks ensure that the robot ID is valid
         if (robotID > roboData.length || robotID < 1) {
             result = "Invalid Robot Choice";
         } else if (response.shelfResult == "Invalid Product ID") {
-            console.log("entered")
+            console.log("Invalid Product ID")
             result = response.shelfResult;
-        } else if (response.shelfResult in roboData.map(robots => robots.robotID)){
+        } else if (roboData.map(robots => robots.location).includes(parseInt(response.shelfResult))){
+            console.log("Location Occupied");
             result = "Location Occupied";
         } else {
             // this finds the robot that was selected
             const movedRobot = roboData.find(robot => robot.robotID == robotID);
+
             // this updates the data to the new location
             movedRobot.location = parseInt(response.shelfResult);
+
+            console.log(response.shelfResult);
+            console.log(roboData.map(robots => robots.location));
+            console.log(parseInt(response.shelfResult) in roboData.map(robots => robots.location));
             result = "Robot Moved Successfully";
-            console.log(roboData);
+            console.log(result);
+
         }    
-        console.log("2",result);
-        console.log("3",response.shelfResult);
         callback(null, { result: result})
     });
 
@@ -132,10 +138,11 @@ function RobotDriveToShelf (call, callback) {
 function RobotTakeBox (call, callback) {
     const{robotID} = call.request;
     let result;
-    console.log("RobotTakeBox RobotID", robotID);
-    console.log(roboData.map(robot => robot.robotID));
-    console.log(robotID == 5);
-    console.log(5 in roboData.map(robot => robot.robotID));
+
+    // if the robot ID specified is indeed in the catalogue of robots
+
+    // else if (robot == 5). This is a weird quirk i could not figure out, for some
+    // reason if robotID = 5 it would not recognise as being in [ 1, 2, 3, 4, 5 ]
     if (robotID in roboData.map(robot => robot.robotID) == true) {
         (roboData.find(robot => robot.robotID == robotID)).hasItem = true;
         console.log("RobotID is correct for RobotTakeBox")
@@ -147,7 +154,7 @@ function RobotTakeBox (call, callback) {
     } else {
         result = "Invalid Robot Choice";
     }
-    console.log(roboData);
+    console.log("Current Robot Data ", roboData);
     callback(null, {result: result})
     
 }
@@ -156,6 +163,7 @@ function RobotTakeBox (call, callback) {
 function RobotLocation (call, callback) {
     const{robotID} = call.request;
     let locationResult;
+    // checks if robotID is valid
     if (robotID > roboData.length || robotID < 1) {
         locationResult = "Invalid Robot Choice";
     } else {
@@ -170,11 +178,13 @@ function RobotLocation (call, callback) {
 function FreeRobot (call,callback) {
     robotIDs = roboData.map(robot => robot.robotID)
     let availableBot;
+
+    // loops through all the robots in roboData and checks if any are available
     for (i= 0; i < robotIDs.length; i++) {
         if (roboData[i].hasItem == false) {
             availableBot = i + 1;
-            console.log(availableBot);
-            console.log("numba",i);
+            console.log("Available Robot: ",availableBot);
+            // console.log("numba",i);
             break
         } else if (i + 1 == robotIDs.length) {
             availableBot = "No Robots are Free";
@@ -182,6 +192,31 @@ function FreeRobot (call,callback) {
     }
     callback(null, {FreeResult: availableBot});
 }
+
+//this function deposits boxes for robots that are currently holding something
+function DepositBox (call, callback) {
+    const{robotID} = call.request;
+    let result;
+    console.log(robotID);
+    if (roboData.map(robot => robot.robotID).includes(robotID)) {
+        if (roboData.find(robot => robot.robotID == robotID).hasItem == true) {
+            (roboData.find(robot => robot.robotID == robotID)).hasItem = false;
+            (roboData.find(robot => robot.robotID == robotID)).location = 0;
+            result = "Item Successfully Deposited";
+            console.log(result)
+            callback(null, {result: result});
+        } else {
+            result = "No Item in Robot";
+            console.log(result)
+            callback(null, {result: result});
+        }
+    } else {
+        result = "Invalid Robot ID";
+        console.log(result)
+        callback(null, {result: result});
+    }
+}
+
 
 // finds the location of the product given its id
 function ShelfSense (call, callback) {
@@ -191,14 +226,16 @@ function ShelfSense (call, callback) {
     // has to match proto file specifications
     let shelfResult;
 
+    // checks that the product ID specified is in the catalogue
     if (productID in productIDs == false) {
         shelfResult = "Invalid Product ID";
     } else {
         
+        // sets the result as the location
         shelfResult = (productData.find(product => product.productID == productID)).productLocation
-        console.log(shelfResult);
+        // console.log(shelfResult);
     }
-    console.log("0",shelfResult)
+
     callback(null, { shelfResult: shelfResult.toString()})
 }
 
@@ -218,7 +255,7 @@ function TransferBox (call, callback) {
         // arm asks shelf sensors where the product is
         shelfClient.ShelfSense({productID: productID}, (err, response) => {
             result2 = response.shelfResult;
-            console.log(result2)
+            // console.log(result2)
 
             // 1 + 2 if the other services are returning errors then arm returns error
             // 3 if no errors but the locations do not match up then product may not be transferred
@@ -237,37 +274,42 @@ function TransferBox (call, callback) {
                 // grasp item and update data to show that the robot has an item
                 roboClient.RobotTakeBox({robotID: robotID}, (err, response) => {
                     result = response.result;
-                    console.log("Skyrim", result);
-                    callback(null, {result: "Product Transferred Succesfully"});
+                    // console.log("Skyrim", result);
+                    callback(null, {result: "Product Grasped Succesfully"});
                 })
             }
-            console.log("Current Robot Data: ",roboData);
+            // console.log("Current Robot Data: ",roboData);
 
         })
     })
 }
 
+// function for the admin to request the package
 function RequestPackage (call, callback) {
     const{productID} = call.request;
-    console.log("product", productID)
+    console.log("Product ID requested", productID)
     let robotID;
+    // asks for what robot is free
     roboClient.FreeRobot({}, (err, response) => {
-        console.log(response.FreeResult);
+        // console.log(response.FreeResult);
         robotID = response.FreeResult;
+
+        // this is to catch an error
+        //otherwise go to RobotDriveToShelf
         if (response.FreeResult == "No Robots are Free") {
-            console.log("RequestPackage NoRobotsError");
+            console.log("No Robots are Free");
             callback(null, {result: response.FreeResult});
         } else {
             roboClient.RobotDriveToShelf({robotID: robotID, productID: productID}, (err, response) => {
                 if (response.result == 'Invalid Product ID') {
                     callback(null, {result: response.result});
+                } else if (response.result == "Location Occupied") {
+                    callback(null, {result: response.result});
                 } else {
                     armClient.TransferBox({robotID: robotID, productID: productID}, (err, response) => {
-                        console.log("TransferBox Response", response);
-                        roboClient.RobotTakeBox({robotID: robotID}, (err, response) => {
-                            console.log("RobotTakeBox Response", response);
-                            callback(null, {result: response.result})
-                })
+                        console.log("TransferBox Response: ", response.result);
+                        callback(null, {result: response.result});
+
             })
             }
 
@@ -275,8 +317,15 @@ function RequestPackage (call, callback) {
         }
 
     });
+}
 
-
-
-
+// function to deposit the box that the admin can call
+function RequestBoxDeposit (call, callback) {
+    const{robotID} = call.request;
+    let result2;
+    console.log("Admin Request Box Deposit - RobotID", robotID);
+    roboClient.DepositBox({robotID: robotID}, (err, response) => {
+        console.log(response);
+        callback(null ,{result2: response.result})
+    })
 }

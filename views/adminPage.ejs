@@ -22,7 +22,7 @@
 
   <div class="productRequest"> 
 
-    <h2>gRPC Calculator</h2> 
+    <h2>Product Request</h2> 
 
     <form action="/productRequest" method="POST"> 
 
@@ -35,6 +35,20 @@
     <% if (result !== null) { %> 
 
       <h3>✅ Result: <%= result %></h3> 
+
+    <% } %> 
+
+    <form action="/depositRequest" method="POST"> 
+
+      <input type="number" name="robotID" step="any" required placeholder="Enter Robot ID" /> 
+
+      <button type="submit">Submit</button> 
+
+    </form> 
+
+    <% if (result2 !== null) { %> 
+
+      <h3>✅ Result: <%= result2 %></h3> 
 
     <% } %> 
   </div> 

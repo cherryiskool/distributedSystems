@@ -7,7 +7,8 @@ service RobotShelfer {
     rpc RobotTakeBox (Robot) returns (RobotTake);
     rpc RobotLocation (Robot) returns (Location);
     rpc FreeRobot (Empty) returns (FreeResult);
-    rpc FirstFreeRobot (Robot) returns (OneFree);
+    rpc DepositBox (Robot) returns (DriveResult);
+
 }
 
 message Empty {}

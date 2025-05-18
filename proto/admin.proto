@@ -4,6 +4,7 @@ package admin;
 
 service Admin {
     rpc RequestPackage (Request) returns (Result);
+    rpc RequestBoxDeposit (Request2) returns (Result2);
 }
 
 message Request {
@@ -12,4 +13,16 @@ message Request {
 
 message Result {
     string result = 1;
+}
+
+message Request2 {
+    double robotID = 1;
+}
+
+message Result2 {
+    string result2 = 1;
+}
+
+message Empty {
+
 }
