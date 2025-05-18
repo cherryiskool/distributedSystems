@@ -198,14 +198,19 @@ function DepositBox (call, callback) {
     const{robotID} = call.request;
     let result;
     console.log(robotID);
+
+    // this checks that the robot id is valid
     if (roboData.map(robot => robot.robotID).includes(robotID)) {
+        // if the robot indeed has an item then it can successfully deposit it and be moved to the deposit location
         if (roboData.find(robot => robot.robotID == robotID).hasItem == true) {
             (roboData.find(robot => robot.robotID == robotID)).hasItem = false;
             (roboData.find(robot => robot.robotID == robotID)).location = 0;
             result = "Item Successfully Deposited";
             console.log(result)
             callback(null, {result: result});
-        } else {
+        } 
+        // otherwise return an error
+        else {
             result = "No Item in Robot";
             console.log(result)
             callback(null, {result: result});
